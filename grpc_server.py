@@ -122,6 +122,7 @@ async def serve():
 
     listen_address = "[::]:50051"
     server.add_insecure_port(listen_address)
+    print(f"Server started, listening on {listen_address}")
 
     await server.start()
 

@@ -344,6 +344,7 @@ def start_comfyui(asyncio_loop=None):
         call_on_start = startup_server
 
     async def start_all():
+        await serve()
         await prompt_server.setup()
         await run(
             prompt_server,
