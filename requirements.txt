@@ -8,6 +8,8 @@ tokenizers>=0.13.3
 sentencepiece
 safetensors>=0.4.2
 aiohttp
+grpcio
+grpcio-tools
 pyyaml
 Pillow
 scipy

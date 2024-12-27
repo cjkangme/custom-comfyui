@@ -1,4 +1,5 @@
 import comfy.options
+
 comfy.options.enable_args_parsing()
 
 import os
@@ -12,16 +13,19 @@ import utils.extra_config
 import logging
 
 if __name__ == "__main__":
-    #NOTE: These do not do anything on core ComfyUI which should already have no communication with the internet, they are for custom nodes.
-    os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
-    os.environ['DO_NOT_TRACK'] = '1'
+    # NOTE: These do not do anything on core ComfyUI which should already have no communication with the internet, they are for custom nodes.
+    os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+    os.environ["DO_NOT_TRACK"] = "1"
 
 
 setup_logger(log_level=args.verbose)
 
+
 def apply_custom_paths():
     # extra model paths
-    extra_model_paths_config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "extra_model_paths.yaml")
+    extra_model_paths_config_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "extra_model_paths.yaml"
+    )
     if os.path.isfile(extra_model_paths_config_path):
         utils.extra_config.load_extra_path_config(extra_model_paths_config_path)
 
@@ -36,12 +40,22 @@ def apply_custom_paths():
         folder_paths.set_output_directory(output_dir)
 
     # These are the default folders that checkpoints, clip and vae models will be saved to when using CheckpointSave, etc.. nodes
-    folder_paths.add_model_folder_path("checkpoints", os.path.join(folder_paths.get_output_directory(), "checkpoints"))
-    folder_paths.add_model_folder_path("clip", os.path.join(folder_paths.get_output_directory(), "clip"))
-    folder_paths.add_model_folder_path("vae", os.path.join(folder_paths.get_output_directory(), "vae"))
-    folder_paths.add_model_folder_path("diffusion_models",
-                                       os.path.join(folder_paths.get_output_directory(), "diffusion_models"))
-    folder_paths.add_model_folder_path("loras", os.path.join(folder_paths.get_output_directory(), "loras"))
+    folder_paths.add_model_folder_path(
+        "checkpoints", os.path.join(folder_paths.get_output_directory(), "checkpoints")
+    )
+    folder_paths.add_model_folder_path(
+        "clip", os.path.join(folder_paths.get_output_directory(), "clip")
+    )
+    folder_paths.add_model_folder_path(
+        "vae", os.path.join(folder_paths.get_output_directory(), "vae")
+    )
+    folder_paths.add_model_folder_path(
+        "diffusion_models",
+        os.path.join(folder_paths.get_output_directory(), "diffusion_models"),
+    )
+    folder_paths.add_model_folder_path(
+        "loras", os.path.join(folder_paths.get_output_directory(), "loras")
+    )
 
     if args.input_directory:
         input_dir = os.path.abspath(args.input_directory)
@@ -76,14 +90,20 @@ def execute_prestartup_script():
 
         for possible_module in possible_modules:
             module_path = os.path.join(custom_node_path, possible_module)
-            if os.path.isfile(module_path) or module_path.endswith(".disabled") or module_path == "__pycache__":
+            if (
+                os.path.isfile(module_path)
+                or module_path.endswith(".disabled")
+                or module_path == "__pycache__"
+            ):
                 continue
 
             script_path = os.path.join(module_path, "prestartup_script.py")
             if os.path.exists(script_path):
                 time_before = time.perf_counter()
                 success = execute_script(script_path)
-                node_prestartup_times.append((time.perf_counter() - time_before, module_path, success))
+                node_prestartup_times.append(
+                    (time.perf_counter() - time_before, module_path, success)
+                )
     if len(node_prestartup_times) > 0:
         logging.info("\nPrestartup times for custom nodes:")
         for n in sorted(node_prestartup_times):
@@ -93,6 +113,7 @@ def execute_prestartup_script():
                 import_message = " (PRESTARTUP FAILED)"
             logging.info("{:6.1f} seconds{}: {}".format(n[0], import_message, n[1]))
         logging.info("")
+
 
 apply_custom_paths()
 execute_prestartup_script()
@@ -106,27 +127,32 @@ import gc
 
 
 if os.name == "nt":
-    logging.getLogger("xformers").addFilter(lambda record: 'A matching Triton is not available' not in record.getMessage())
+    logging.getLogger("xformers").addFilter(
+        lambda record: "A matching Triton is not available" not in record.getMessage()
+    )
 
 if __name__ == "__main__":
     if args.cuda_device is not None:
-        os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda_device)
-        os.environ['HIP_VISIBLE_DEVICES'] = str(args.cuda_device)
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_device)
+        os.environ["HIP_VISIBLE_DEVICES"] = str(args.cuda_device)
         logging.info("Set cuda device to: {}".format(args.cuda_device))
 
     if args.oneapi_device_selector is not None:
-        os.environ['ONEAPI_DEVICE_SELECTOR'] = args.oneapi_device_selector
-        logging.info("Set oneapi device selector to: {}".format(args.oneapi_device_selector))
+        os.environ["ONEAPI_DEVICE_SELECTOR"] = args.oneapi_device_selector
+        logging.info(
+            "Set oneapi device selector to: {}".format(args.oneapi_device_selector)
+        )
 
     if args.deterministic:
-        if 'CUBLAS_WORKSPACE_CONFIG' not in os.environ:
-            os.environ['CUBLAS_WORKSPACE_CONFIG'] = ":4096:8"
+        if "CUBLAS_WORKSPACE_CONFIG" not in os.environ:
+            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     import cuda_malloc
 
 if args.windows_standalone_build:
     try:
         from fix_torch import fix_pytorch_libomp
+
         fix_pytorch_libomp()
     except:
         pass
@@ -135,9 +161,12 @@ import comfy.utils
 
 import execution
 import server
+import grpc_server
+from grpc_server import serve
 from server import BinaryEventTypes
 import nodes
 import comfy.model_management
+
 
 def cuda_malloc_warning():
     device = comfy.model_management.get_torch_device()
@@ -148,7 +177,9 @@ def cuda_malloc_warning():
             if b in device_name:
                 cuda_malloc_warning = True
         if cuda_malloc_warning:
-            logging.warning("\nWARNING: this card most likely does not support cuda-malloc, if you get \"CUDA error\" please run ComfyUI with: --disable-cuda-malloc\n")
+            logging.warning(
+                '\nWARNING: this card most likely does not support cuda-malloc, if you get "CUDA error" please run ComfyUI with: --disable-cuda-malloc\n'
+            )
 
 
 def prompt_worker(q, server_instance):
@@ -172,14 +203,21 @@ def prompt_worker(q, server_instance):
 
             e.execute(item[2], prompt_id, item[3], item[4])
             need_gc = True
-            q.task_done(item_id,
-                        e.history_result,
-                        status=execution.PromptQueue.ExecutionStatus(
-                            status_str='success' if e.success else 'error',
-                            completed=e.success,
-                            messages=e.status_messages))
+            q.task_done(
+                item_id,
+                e.history_result,
+                status=execution.PromptQueue.ExecutionStatus(
+                    status_str="success" if e.success else "error",
+                    completed=e.success,
+                    messages=e.status_messages,
+                ),
+            )
             if server_instance.client_id is not None:
-                server_instance.send_sync("executing", {"node": None, "prompt_id": prompt_id}, server_instance.client_id)
+                server_instance.send_sync(
+                    "executing",
+                    {"node": None, "prompt_id": prompt_id},
+                    server_instance.client_id,
+                )
 
             current_time = time.perf_counter()
             execution_time = current_time - execution_start_time
@@ -207,21 +245,33 @@ def prompt_worker(q, server_instance):
                 need_gc = False
 
 
-async def run(server_instance, address='', port=8188, verbose=True, call_on_start=None):
+async def run(server_instance, address="", port=8188, verbose=True, call_on_start=None):
     addresses = []
     for addr in address.split(","):
         addresses.append((addr, port))
-    await asyncio.gather(server_instance.start_multi_address(addresses, call_on_start), server_instance.publish_loop())
+    await asyncio.gather(
+        server_instance.start_multi_address(addresses, call_on_start),
+        server_instance.publish_loop(),
+    )
 
 
 def hijack_progress(server_instance):
     def hook(value, total, preview_image):
         comfy.model_management.throw_exception_if_processing_interrupted()
-        progress = {"value": value, "max": total, "prompt_id": server_instance.last_prompt_id, "node": server_instance.last_node_id}
+        progress = {
+            "value": value,
+            "max": total,
+            "prompt_id": server_instance.last_prompt_id,
+            "node": server_instance.last_node_id,
+        }
 
         server_instance.send_sync("progress", progress, server_instance.client_id)
         if preview_image is not None:
-            server_instance.send_sync(BinaryEventTypes.UNENCODED_PREVIEW_IMAGE, preview_image, server_instance.client_id)
+            server_instance.send_sync(
+                BinaryEventTypes.UNENCODED_PREVIEW_IMAGE,
+                preview_image,
+                server_instance.client_id,
+            )
 
     comfy.utils.set_progress_bar_global_hook(hook)
 
@@ -246,6 +296,7 @@ def start_comfyui(asyncio_loop=None):
     if args.windows_standalone_build:
         try:
             import new_updater
+
             new_updater.update_windows_updater()
         except:
             pass
@@ -254,6 +305,8 @@ def start_comfyui(asyncio_loop=None):
         asyncio_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(asyncio_loop)
     prompt_server = server.PromptServer(asyncio_loop)
+    grpc_servicer = grpc_server.GetImageServicer()
+    execution.PromptQueue(grpc_servicer)
     q = execution.PromptQueue(prompt_server)
 
     nodes.init_extra_nodes(init_custom_nodes=not args.disable_all_custom_nodes)
@@ -263,7 +316,14 @@ def start_comfyui(asyncio_loop=None):
     prompt_server.add_routes()
     hijack_progress(prompt_server)
 
-    threading.Thread(target=prompt_worker, daemon=True, args=(q, prompt_server,)).start()
+    threading.Thread(
+        target=prompt_worker,
+        daemon=True,
+        args=(
+            q,
+            prompt_server,
+        ),
+    ).start()
 
     if args.quick_test_for_ci:
         exit(0)
@@ -271,18 +331,27 @@ def start_comfyui(asyncio_loop=None):
     os.makedirs(folder_paths.get_temp_directory(), exist_ok=True)
     call_on_start = None
     if args.auto_launch:
+
         def startup_server(scheme, address, port):
             import webbrowser
-            if os.name == 'nt' and address == '0.0.0.0':
-                address = '127.0.0.1'
-            if ':' in address:
+
+            if os.name == "nt" and address == "0.0.0.0":
+                address = "127.0.0.1"
+            if ":" in address:
                 address = "[{}]".format(address)
             webbrowser.open(f"{scheme}://{address}:{port}")
+
         call_on_start = startup_server
 
     async def start_all():
         await prompt_server.setup()
-        await run(prompt_server, address=args.listen, port=args.port, verbose=not args.dont_print_server, call_on_start=call_on_start)
+        await run(
+            prompt_server,
+            address=args.listen,
+            port=args.port,
+            verbose=not args.dont_print_server,
+            call_on_start=call_on_start,
+        )
 
     # Returning these so that other code can integrate with the ComfyUI loop and server
     return asyncio_loop, prompt_server, start_all
