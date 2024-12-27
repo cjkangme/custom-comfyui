@@ -8,13 +8,13 @@ from concurrent import futures
 from collections import defaultdict
 from app.user_manager import UserManager
 from app.model_manager import ModelFileManager
-import main_pb2_grpc
 
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "..")
+    os.path.join(os.path.dirname(__file__), "..", "..", "api")
 )  # Add the path to the root directory of the project curr directory is storage/ComfyUI
 import grpc
 import main_pb2
+import main_pb2_grpc
 
 
 class GetImageManager:
