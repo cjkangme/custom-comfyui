@@ -4,6 +4,7 @@ import asyncio
 import uuid
 import execution
 import time
+import logging
 from concurrent import futures
 from collections import defaultdict
 from app.user_manager import UserManager
@@ -122,7 +123,7 @@ async def serve():
 
     listen_address = "[::]:50051"
     server.add_insecure_port(listen_address)
-    print(f"Server started, listening on {listen_address}")
+    logging.info(f"Server started, listening on {listen_address}")
 
     await server.start()
 
