@@ -11,7 +11,7 @@ from app.user_manager import UserManager
 from app.model_manager import ModelFileManager
 
 sys.path.append(
-    os.path.join(os.path.dirname(__file__), "..", "..", "api")
+    os.path.join(os.path.dirname(__file__), "..", "api")
 )  # Add the path to the root directory of the project curr directory is storage/ComfyUI
 import grpc
 import main_pb2
